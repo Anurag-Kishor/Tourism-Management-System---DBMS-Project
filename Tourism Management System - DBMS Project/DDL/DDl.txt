@@ -1,0 +1,119 @@
+DROP SCHEMA Tourism CASCADE;
+CREATE SCHEMA Tourism;
+SET search_path TO Tourism;
+
+CREATE TABLE Users(
+	UserID int PRIMARY KEY,
+	Fname varchar(20) NOT NULL,
+	Lname varchar(20) NOT NULL,
+	Email varchar(20) NOT NULL,
+	Phone Numeric(10) NOT NULL,
+	Gender char(1) CHECK(Gender in ('M', 'F', 'O')),
+	Age int
+);
+
+CREATE TABLE CoPassenger(
+	UserID int REFERENCES Users(UserID),
+	Fname varchar(20) NOT NULL,
+	Lname varchar(20) NOT NULL,
+	Email varchar(20),
+	Phone Numeric(10),
+	Gender char(1) CHECK(Gender in ('M', 'F', 'O')),
+	Age int,
+	
+	PRIMARY KEY(UserId,Fname,Lname)
+);
+
+
+CREATE TABLE Location(
+	Pincode Numeric(6) PRIMARY KEY,
+	City varchar(20) NOT NULL,
+	"State" varchar(20) NOT NULL
+);
+
+CREATE TABLE Tourist_Spots(
+	SpotID int PRIMARY KEY,
+	SpotName varchar(20),
+	FavourableSeason varchar(20),
+	Ratings float,
+	Address varchar(30),
+	Pincode Numeric(6) REFERENCES Location(Pincode)
+);
+
+CREATE TABLE Guide(
+	GuideID int PRIMARY KEY,
+	Fname varchar(20) NOT NULL,
+	Lname varchar(20) NOT NULL,
+	Email varchar(20) NOT NULL,
+	Phone Numeric(10) NOT NULL,
+	Gender char(1) CHECK(Gender in ('M', 'F', 'O')),
+	Age int,
+	Address varchar(30),
+	Pincode Numeric(6) REFERENCES Location(Pincode)	
+);
+
+CREATE TABLE Hotel(
+	HotelID int PRIMARY KEY,
+	HotelName varchar(20) NOT NULL,
+	Phone Numeric(10) NOT NULL,
+	FoodType varchar(20),
+	UserRatings float,
+	Address varchar(30) NOT NULL,
+	StarRating int,
+	Pincode Numeric(6) REFERENCES Location(Pincode)
+);
+
+CREATE TABLE Hotel_Services(
+	HotelID int REFERENCES Hotel(HotelID),
+	Services varchar(30),
+	PRIMARY KEY (HotelID, Services)
+);
+
+CREATE TABLE Room(
+	HotelID int REFERENCES Hotel(HotelID) UNIQUE,
+	RoomNo int UNIQUE,
+	RoomType varchar(20) CHECK(RoomType in('AC', 'NonAC')),
+	Beds int,
+	Capacity int,
+	Rate float,
+	
+	PRIMARY KEY(HotelID, RoomNo)
+);
+
+CREATE TABLE Room_Facilities(
+	HotelID int REFERENCES Room(HotelID),
+	RoomNo int REFERENCES Room(RoomNo),
+	Facility varchar(20),
+	
+	PRIMARY KEY(HotelID,RoomNo,Facility)
+);
+
+CREATE TABLE Package(
+	PackageID int PRIMARY KEY,
+	Title varchar(20),
+	No_of_people int,
+	Amount float
+);
+
+CREATE TABLE Package_Spots(
+	PackageID int REFERENCES Package(PackageID),
+	SpotID int REFERENCES Tourist_Spots(SpotID),
+	PRIMARY KEY (PackageID, SpotID)
+);
+
+CREATE TABLE Package_Guides(
+	PackageID int REFERENCES Package(PackageID),
+	GuideID int REFERENCES Guide(GuideID),
+	PRIMARY KEY (PackageID, GuideID)
+);
+
+CREATE TABLE Package_Hotels(
+	PackageID int REFERENCES Package(PackageID),
+	HotelID int REFERENCES Room(HotelID),
+	RoomNo int REFERENCES Room(RoomNo),
+	PRIMARY KEY (PackageID, HotelID, RoomNo)
+);
+
+
+
+

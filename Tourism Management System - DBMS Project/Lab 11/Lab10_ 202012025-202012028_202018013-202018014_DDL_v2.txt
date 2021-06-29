@@ -1,0 +1,201 @@
+-- SCHEMA: Tourism_Management_System
+-- DROP SCHEMA "Tourism_Management_System" ;
+DROP SCHEMA Tourism_Management_System CASCADE;
+CREATE SCHEMA Tourism_Management_System;
+SET search_path TO Tourism_Management_System;
+
+CREATE SEQUENCE aadhar_sequence
+  start 204010567970
+  increment 2;
+
+ALTER SEQUENCE aadhar_sequence RESTART WITH 204010567970;
+
+CREATE SEQUENCE g_aadhar_sequence
+  start 304010567972
+  increment 3;
+
+ALTER SEQUENCE g_aadhar_sequence RESTART WITH 304010567972;
+
+--USER---------------------------------------------------------------------------------------------------------------------
+CREATE TABLE "User"(
+UserAadharNo BIGSERIAL PRIMARY KEY,
+Fname VARCHAR(10) NOT NULL,
+Lname VARCHAR(10) NOT NULL,
+Email VARCHAR(20) NOT NULL,
+Phone Numeric(10) NOT NULL,
+IsActive BOOLEAN DEFAULT TRUE,
+Gender CHAR(1) CHECK (GENDER IN('M','F','O')),
+AGE int
+);
+
+--CoPassenger------------------------------------------------------------------------------------------------------------------
+CREATE TABLE COPASSENGER(
+UserAadharNo BIGSERIAL NOT NULL REFERENCES "User"(UserAadharNo),
+CoPassID int NOT NULL,
+Fname VARCHAR(10) NOT NULL,
+Lname VARCHAR(10) NOT NULL,
+Email VARCHAR(20),
+Phone DECIMAL(12,0),
+Gender CHAR(1) CHECK (GENDER IN('M','F','O')),
+AGE int,
+PRIMARY KEY(UserAadharNo,CoPassID)
+);
+
+--Booking---------------------------------------------------------------------------------------------
+CREATE TABLE BOOKING(
+BID int GENERATED ALWAYS AS IDENTITY UNIQUE,
+UserAadharNo BIGSERIAL REFERENCES "User"(UserAadharNo) NOT NULL,
+Booking_Date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+TripStart_Date Date NOT NULL,
+TripEnd_Date Date NOT NULL,
+Amount float,
+PRIMARY KEY(BID)
+);
+
+--Booking CoPassenger---------------------------------------------------------------------------------
+CREATE TABLE BOOKING_COPASSENGER(
+BID int NOT NULL REFERENCES BOOKING(BID),
+UserAadharNo BIGSERIAL NOT NULL,
+CoPassID int NOT NULL,
+FOREIGN KEY(UserAadharNo,CoPassID) REFERENCES COPASSENGER(UserAadharNo,CoPassID) ,
+PRIMARY KEY(BID,UserAadharNo,CoPassID)
+);
+
+--PACKAGE-----------------------------------------------------------------------------------------------------------------------
+CREATE TABLE PACKAGE(
+PACKAGEID int PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+TITLE VARCHAR(15) NOT NULL,
+DURATION int,
+NO_OF_PEOPLE int,
+IsActive BOOLEAN DEFAULT TRUE,
+AMOUNT float
+);
+
+
+--Booking Package-------------------------------------------------------------------------------------
+CREATE TABLE BOOKING_FOR_PACKAGE(
+BID int PRIMARY KEY REFERENCES BOOKING(BID),
+PACKAGEID int NOT NULL REFERENCES PACKAGE(PACKAGEID)
+);
+
+--Location-----------------------------------------------------------------------------------------------------------------
+CREATE TABLE LOCATION(
+PINCODE Numeric(6) PRIMARY KEY,
+CITY VARCHAR(30),
+"state" VARCHAR(30)
+);
+
+--Tourist Spot-------------------------------------------------------------------------------------------------------------------
+CREATE TABLE TOURIST_SPOTS(
+SPOTID int PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+"Name" VARCHAR(20) NOT NULL,
+SEASON VARCHAR(10),
+RATINGS FLOAT CHECK (RATINGS>=0 AND RATINGS<=5),
+ADDRESS VARCHAR(100),
+PINCODE Numeric(6) REFERENCES LOCATION(PINCODE)
+);
+
+--Package Tourist Spots-------------------------------------------------------------------------------------
+CREATE TABLE Package_Includes_Spots(
+PACKAGEID int NOT NULL REFERENCES PACKAGE(PACKAGEID),
+SPOTID int NOT NULL REFERENCES TOURIST_SPOTS(SPOTID) ON UPDATE CASCADE ON DELETE
+CASCADE,
+PRIMARY KEY(PACKAGEID,SPOTID)
+);
+
+--GUIDE-----------------------------------------------------------------------------------------------------------------------
+CREATE TABLE GUIDE(
+GuideAadharNo BIGSERIAL PRIMARY KEY,
+Fname VARCHAR(10) NOT NULL,
+Lname VARCHAR(10) NOT NULL,
+Email VARCHAR(20),
+Phone Numeric(10) NOT NULL,
+Gender CHAR(1) CHECK (GENDER IN('M','F','O')),
+AGE int,
+ADDRESS VARCHAR(100),
+PINCODE Numeric(6) REFERENCES LOCATION(PINCODE)
+);
+
+--Package GUIDE---------------------------------------------------------------------------------------------
+CREATE TABLE Package_Includes_Guides(
+PACKAGEID int NOT NULL REFERENCES PACKAGE(PACKAGEID),
+GuideAadharNo BIGSERIAL NOT NULL REFERENCES GUIDE(GuideAadharNo) ON DELETE CASCADE,
+PRIMARY KEY(PACKAGEID,GuideAadharNo)
+);
+
+--RESTAURANTS----------------------------------------------------------------------------------------------------------
+CREATE TABLE RESTAURANT(
+RID int PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+"Name" VARCHAR(50) NOT NULL,
+PHONE Numeric(10),
+FOODTYPE VARCHAR(20) CHECK (FOODTYPE IN('VEG','NON-VEG','BOTH')),
+RATINGS float CHECK (RATINGS>=0 AND RATINGS<=5),
+ADDRESS VARCHAR(100),
+PINCODE Numeric(6) REFERENCES LOCATION(PINCODE)
+);
+
+--Restaurant Cuisines--------------------------------------------------------------------------------------------------------
+CREATE TABLE RESTAURANT_CUISINES(
+RID int NOT NULL REFERENCES RESTAURANT(RID) ON DELETE CASCADE,
+CUISINES VARCHAR(20) NOT NULL,
+PRIMARY KEY(RID,CUISINES)
+);
+
+--Hotels-----------------------------------------------------------------------------------------------------------------------
+CREATE TABLE HOTEL(
+HOTELID int PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+"Name" VARCHAR(50) NOT NULL,
+PHONE Numeric(10),
+FOODTYPE VARCHAR(20) CHECK (FOODTYPE IN('VEG','NON-VEG','BOTH')),
+RATINGS float CHECK (RATINGS>=0 AND RATINGS<=5),
+ADDRESS VARCHAR(100),
+IsActive BOOLEAN DEFAULT TRUE,
+PINCODE Numeric(6) REFERENCES LOCATION(PINCODE)
+);
+
+--Hotel_Services----------------------------------------------------------------------------------------------------------------
+CREATE TABLE HOTEL_SERVICES(
+HOTELID int NOT NULL REFERENCES HOTEL(HOTELID),
+SERVICES VARCHAR(50) NOT NULL,
+PRIMARY KEY(HOTELID,SERVICES)
+);
+
+--ROOMS-----------------------------------------------------------------------------------------------------------------------
+CREATE TABLE ROOM(
+HOTELID int NOT NULL REFERENCES HOTEL(HOTELID),
+ROOM_NO DECIMAL(3,0) NOT NULL,
+PRIMARY KEY(HOTELID,ROOM_NO),
+"Type" VARCHAR(6) CHECK( "Type" IN('AC','NON-AC','HEATER')),
+BEDS int CHECK(BEDS>0),
+CAPACITY int CHECK(CAPACITY>0),
+RATE FLOAT,
+STATUS VARCHAR(15) CHECK (STATUS IN('AVAILABLE','NOT-AVAILABLE','BOOKED'))
+);
+
+--ROOM FACILITIES-----------------------------------------------------------------------------------------------------------
+CREATE TABLE ROOM_FACILITIES(
+HOTELID int NOT NULL,
+ROOM_NO int NOT NULL,
+FACILITY VARCHAR(50) NOT NULL,
+FOREIGN KEY (HOTELID,ROOM_NO) REFERENCES ROOM(HOTELID,ROOM_NO),
+PRIMARY KEY(HOTELID,ROOM_NO,FACILITY)
+);
+
+--Package_Hotel---------------------------------------------------------------------------------------------
+CREATE TABLE Package_Includes_Hotels(
+PACKAGEID int NOT NULL REFERENCES PACKAGE(PACKAGEID) ,
+HOTELID int NOT NULL,
+ROOM_NO int NOT NULL,
+FOREIGN KEY (HOTELID,ROOM_NO) REFERENCES ROOM(HOTELID,ROOM_NO),
+PRIMARY KEY(PACKAGEID,HOTELID,ROOM_NO)
+);
+
+--Booking Hotel-------------------------------------------------------------------------------------
+CREATE TABLE Booking_For_Hotel(
+BID int REFERENCES BOOKING(BID) NOT NULL,
+HOTELID int NOT NULL,
+ROOM_NO int NOT NULL,
+FOREIGN KEY (HOTELID,ROOM_NO) REFERENCES ROOM(HOTELID,ROOM_NO),
+PRIMARY KEY(BID,HOTELID,ROOM_NO)
+);
+
